@@ -42,6 +42,11 @@
 #include "Graphics/TextureCubeMap.h"
 #include "Graphics/TextureCubeMapData.h"
 
+/*#include "Graphics/Post/GreyscaleEffect.h"
+#include "Graphics/Post/SepiaEffect.h"
+#include "Graphics/Post/ColourCorrectionEffect.h"*/
+#include "Graphics/LUT.h"
+
 #define LOG_GL_NOTIFICATIONS
 
 /*
@@ -240,6 +245,15 @@ int main() {
 	// Push another scope so most memory should be freed *before* we exit the app
 	{
 		#pragma region Shader and ImGui
+		Shader::sptr passthroughShader = Shader::Create();
+		passthroughShader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
+		passthroughShader->LoadShaderPartFromFile("shaders/passthrough_frag.glsl", GL_FRAGMENT_SHADER);
+		passthroughShader->Link();
+
+		Shader::sptr colourCorrectionShader = Shader::Create();
+		colourCorrectionShader->LoadShaderPartFromFile("shaders/passthrough_vert.glsl", GL_VERTEX_SHADER);
+		colourCorrectionShader->LoadShaderPartFromFile("shaders/Post/colour_correction_frag.glsl", GL_FRAGMENT_SHADER);
+		colourCorrectionShader->Link();
 
 		// Load our shaders
 		Shader::sptr shader = Shader::Create();
@@ -275,6 +289,18 @@ int main() {
 		shader->SetUniform("u_AmbientFactor", ambientFactor);
 		shader->SetUniform("u_SpecularFactor", specularFactor);
 		shader->SetUniform("u_ToonFactor", toonFactor);
+
+		//Effects
+		/*PostEffect* basicEffect;
+
+		int activeEffect = 0;
+		std::vector<PostEffect*> effects;
+
+		SepiaEffect* sepiaEffect;
+
+		GreyscaleEffect* greyscaleEffect;
+
+		ColourCorrectionEffect* colourCorrect;*/
 
 		// We'll add some ImGui controls to control our shader
 		imGuiCallbacks.push_back([&]() {
@@ -379,6 +405,9 @@ int main() {
 		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/plains_island_texture.png");
 		Texture2D::sptr swordTex = Texture2D::LoadFromFile("images/Sword.png");
 		Texture2D::sptr stoneTex = Texture2D::LoadFromFile("images/stone_tex.JPG");
+		LUT3D testCube("cubes/test.cube");
+		LUT3D coolCube("cubes/Cool LUT.cube");
+		LUT3D warmCube("cubes/Warm LUT.cube");
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -600,6 +629,36 @@ int main() {
 			camera.SetOrthoHeight(3.0f);
 			BehaviourBinding::Bind<CameraControlBehaviour>(cameraObject);
 		}
+
+		/*int width, height;
+		glfwGetWindowSize(window, &width, &height);
+
+		GameObject colourCorrectObject = scene->CreateEntity("Colour Correct Effect");
+		{
+			colourCorrect = &colourCorrectObject.emplace<ColourCorrectionEffect>();
+			colourCorrect->Init(width, height);
+		}
+		//effects.push_back(colourCorrect);
+
+		GameObject framebufferObject = scene->CreateEntity("Basic Effect");
+		{
+			basicEffect = &framebufferObject.emplace<PostEffect>();
+			basicEffect->Init(width, height);
+		}
+
+		GameObject sepiaEffectObject = scene->CreateEntity("Sepia Effect");
+		{
+			sepiaEffect = &sepiaEffectObject.emplace<SepiaEffect>();
+			sepiaEffect->Init(width, height);
+		}
+		effects.push_back(sepiaEffect);
+
+		GameObject greyscaleEffectObject = scene->CreateEntity("Greyscale Effect");
+		{
+			greyscaleEffect = &greyscaleEffectObject.emplace<GreyscaleEffect>();
+			greyscaleEffect->Init(width, height);
+		}
+		effects.push_back(greyscaleEffect);*/
 
 		#pragma endregion 
 		//////////////////////////////////////////////////////////////////////////////////////////
