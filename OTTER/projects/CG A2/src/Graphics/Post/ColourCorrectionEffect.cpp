@@ -18,7 +18,6 @@ void ColourCorrectionEffect::Init(unsigned width, unsigned height)
 void ColourCorrectionEffect::ApplyEffect(PostEffect* buffer)
 {
     BindShader(0);
-    _shaders[0]->SetUniform("u_Intensity", _intensity);
 
     buffer->BindColourAsTexture(0, 0, 0);
 
@@ -32,19 +31,8 @@ void ColourCorrectionEffect::ApplyEffect(PostEffect* buffer)
 void ColourCorrectionEffect::DrawToScreen()
 {
     BindShader(0);
-    _shaders[0]->SetUniform("u_Intensity", _intensity);
     BindColourAsTexture(0, 0, 0);
     _buffers[0]->DrawFullscreenQuad();
     UnbindTexture(0);
     UnbindShader();
-}
-
-float ColourCorrectionEffect::GetIntensity() const
-{
-    return _intensity;
-}
-
-void ColourCorrectionEffect::SetIntensity(float intensity)
-{
-    _intensity = intensity;
 }

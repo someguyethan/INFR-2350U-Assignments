@@ -61,18 +61,18 @@ int main() {
 		shader->LoadShaderPartFromFile("shaders/frag_blinn_phong_textured.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
 
-		glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
-		glm::vec3 lightCol = glm::vec3(0.9f, 0.85f, 0.5f);
-		float     lightAmbientPow = 0.05f;
-		float     lightSpecularPow = 1.0f;
-		glm::vec3 ambientCol = glm::vec3(1.0f);
-		float     ambientPow = 0.1f;
-		float     lightLinearFalloff = 0.09f;
-		float     lightQuadraticFalloff = 0.032f;
-		int		  diffuseFactor = 1;
-		int		  ambientFactor = 1;
-		int		  specularFactor = 1;
-		int		  toonFactor = 1;
+		glm::vec3		lightPos = glm::vec3(0.0f, 0.0f, 2.0f);
+		glm::vec3		lightCol = glm::vec3(1.0f);
+		float			lightAmbientPow = 1.0f;
+		float			lightSpecularPow = 1.0f;
+		glm::vec3		ambientCol = glm::vec3(1.0f);
+		float			ambientPow = 0.5f;
+		float			lightLinearFalloff = 0.09f;
+		float			lightQuadraticFalloff = 0.032f;
+		int				diffuseFactor = 1;
+		int				ambientFactor = 1;
+		int				specularFactor = 1;
+		int				toonFactor = 1;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -95,6 +95,7 @@ int main() {
 
 		int activeEffect = 0;
 		std::vector<PostEffect*> effects;
+		std::vector<LUT3D> LUTs;
 
 		SepiaEffect* sepiaEffect;
 
@@ -102,34 +103,28 @@ int main() {
 
 		ColourCorrectionEffect* colourCorrect;
 
+		LUT3D testCube("cubes/test.cube");
+		LUTs.push_back(testCube);
+		LUT3D coolCube("cubes/Cool LUT.cube");
+		LUTs.push_back(coolCube);
+		LUT3D warmCube("cubes/Warm LUT.cube");
+		LUTs.push_back(warmCube);
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
 			if (ImGui::CollapsingHeader("Effect Controls"))
 			{
-				ImGui::SliderInt("Chosen Effect", &activeEffect, 0, effects.size() - 1);
+				ImGui::SliderInt("Chosen Effect", &activeEffect, 0, LUTs.size() - 1);
+				if (activeEffect == 2)
+				{
+					ImGui::Text("Active Effect: Warm Effect");
+				}
 				if (activeEffect == 1)
 				{
-					ImGui::Text("Active Effect: Greyscale Effect");
-
-					SepiaEffect* temp = (SepiaEffect*)effects[activeEffect];
-					float intensity = temp->GetIntensity();
-
-					if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f))
-					{
-						temp->SetIntensity(intensity);
-					}
+					ImGui::Text("Active Effect: Cool Effect");
 				}
 				if (activeEffect == 0)
 				{
-					ImGui::Text("Active Effect: Sepia Effect");
-
-					GreyscaleEffect* temp = (GreyscaleEffect*)effects[activeEffect];
-					float intensity = temp->GetIntensity();
-
-					if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f))
-					{
-						temp->SetIntensity(intensity);
-					}
+					ImGui::Text("Active Effect: Custom Effect");
 				}
 			}
 			if (ImGui::CollapsingHeader("Environment generation"))
@@ -187,6 +182,39 @@ int main() {
 			}
 			ImGui::PlotLines("FPS", fpsBuffer, 128);
 			ImGui::Text("MIN: %f MAX: %f AVG: %f", minFps, maxFps, avgFps / 128.0f);
+
+			if (ImGui::Button("Diffuse"))
+			{
+				if (diffuseFactor == 1)
+					diffuseFactor = 0;
+				else if (diffuseFactor == 0)
+					diffuseFactor = 1;
+				shader->SetUniform("u_DiffuseFactor", diffuseFactor);
+			}
+			if (ImGui::Button("Ambient"))
+			{
+				if (ambientFactor == 1)
+					ambientFactor = 0;
+				else if (ambientFactor == 0)
+					ambientFactor = 1;
+				shader->SetUniform("u_AmbientFactor", ambientFactor);
+			}
+			if (ImGui::Button("Specular"))
+			{
+				if (specularFactor == 1)
+					specularFactor = 0;
+				else if (specularFactor == 0)
+					specularFactor = 1;
+				shader->SetUniform("u_SpecularFactor", specularFactor);
+			}
+			if (ImGui::Button("Toon"))
+			{
+				if (toonFactor == 1)
+					toonFactor = 0;
+				else if (toonFactor == 0)
+					toonFactor = 1;
+				shader->SetUniform("u_ToonFactor", toonFactor);
+			}
 			});
 
 		#pragma endregion 
@@ -206,10 +234,6 @@ int main() {
 		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/plains_island_texture.png");
 		Texture2D::sptr swordTex = Texture2D::LoadFromFile("images/Sword.png");
 		Texture2D::sptr stoneTex = Texture2D::LoadFromFile("images/stone_tex.JPG");
-
-		LUT3D testCube("cubes/test.cube");
-		LUT3D coolCube("cubes/Cool LUT.cube");
-		LUT3D warmCube("cubes/Warm LUT.cube");
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -603,9 +627,9 @@ int main() {
 
 			colourCorrectionShader->Bind();
 			colourCorrect->BindColourAsTexture(0, 0, 0);
-			warmCube.bind(30);
+			LUTs[activeEffect].bind(30);
 			colourCorrect->DrawToScreen();
-			warmCube.unbind(30);
+			LUTs[activeEffect].unbind(30);
 			colourCorrect->UnbindTexture(0);
 			colourCorrectionShader->UnBind();
 
