@@ -69,6 +69,10 @@ int main() {
 		float     ambientPow = 0.1f;
 		float     lightLinearFalloff = 0.09f;
 		float     lightQuadraticFalloff = 0.032f;
+		int		  diffuseFactor = 1;
+		int		  ambientFactor = 1;
+		int		  specularFactor = 1;
+		int		  toonFactor = 1;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -81,6 +85,10 @@ int main() {
 		shader->SetUniform("u_LightAttenuationConstant", 1.0f);
 		shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
 		shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
+		shader->SetUniform("u_DiffuseFactor", diffuseFactor);
+		shader->SetUniform("u_AmbientFactor", ambientFactor);
+		shader->SetUniform("u_SpecularFactor", specularFactor);
+		shader->SetUniform("u_ToonFactor", toonFactor);
 
 		//Effects
 		PostEffect* basicEffect;
@@ -185,20 +193,23 @@ int main() {
 
 		// GL states
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
+		//glEnable(GL_CULL_FACE);
 		glDepthFunc(GL_LEQUAL); // New 
 
 		#pragma region TEXTURE LOADING
 
 		// Load some textures from files
-		Texture2D::sptr stone = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
-		Texture2D::sptr stoneSpec = Texture2D::LoadFromFile("images/Stone_001_Specular.png");
-		Texture2D::sptr grass = Texture2D::LoadFromFile("images/grass.jpg");
-		Texture2D::sptr noSpec = Texture2D::LoadFromFile("images/grassSpec.png");
-		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
-		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
-		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
+		Texture2D::sptr diffuse = Texture2D::LoadFromFile("images/Stone_001_Diffuse.png");
+		Texture2D::sptr diffuse2 = Texture2D::LoadFromFile("images/box.bmp");
+		Texture2D::sptr specular = Texture2D::LoadFromFile("images/Stone_001_Specular.png");
+		Texture2D::sptr reflectivity = Texture2D::LoadFromFile("images/box-reflections.bmp");
+		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/plains_island_texture.png");
+		Texture2D::sptr swordTex = Texture2D::LoadFromFile("images/Sword.png");
+		Texture2D::sptr stoneTex = Texture2D::LoadFromFile("images/stone_tex.JPG");
+
 		LUT3D testCube("cubes/test.cube");
+		LUT3D coolCube("cubes/Cool LUT.cube");
+		LUT3D warmCube("cubes/Warm LUT.cube");
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -232,66 +243,151 @@ int main() {
 			scene->Registry().group<RendererComponent>(entt::get_t<Transform>());
 
 		// Create a material and set some properties for it
-		ShaderMaterial::sptr stoneMat = ShaderMaterial::Create();  
+		ShaderMaterial::sptr material0 = ShaderMaterial::Create();
+		material0->Shader = shader;
+		material0->Set("s_Diffuse", diffuse);
+		material0->Set("s_Diffuse2", diffuse2);
+		material0->Set("s_Specular", specular);
+		material0->Set("u_Shininess", 8.0f);
+		material0->Set("u_TextureMix", 0.5f);
+
+		ShaderMaterial::sptr islandMat = ShaderMaterial::Create();
+		islandMat->Shader = shader;
+		islandMat->Set("s_Diffuse", islandTex);
+		islandMat->Set("s_Diffuse2", islandTex);
+		islandMat->Set("s_Specular", specular);
+		islandMat->Set("u_Shininess", 8.0f);
+		islandMat->Set("u_TextureMix", 0.5f);
+
+		ShaderMaterial::sptr swordMat = ShaderMaterial::Create();
+		swordMat->Shader = shader;
+		swordMat->Set("s_Diffuse", swordTex);
+		swordMat->Set("s_Diffuse2", swordTex);
+		swordMat->Set("s_Specular", specular);
+		swordMat->Set("u_Shininess", 8.0f);
+		swordMat->Set("u_TextureMix", 0.5f);
+
+		ShaderMaterial::sptr stoneMat = ShaderMaterial::Create();
 		stoneMat->Shader = shader;
-		stoneMat->Set("s_Diffuse", stone);
-		stoneMat->Set("s_Specular", stoneSpec);
-		stoneMat->Set("u_Shininess", 2.0f);
-		stoneMat->Set("u_TextureMix", 0.0f); 
-
-		ShaderMaterial::sptr grassMat = ShaderMaterial::Create();
-		grassMat->Shader = shader;
-		grassMat->Set("s_Diffuse", grass);
-		grassMat->Set("s_Specular", noSpec);
-		grassMat->Set("u_Shininess", 2.0f);
-		grassMat->Set("u_TextureMix", 0.0f);
-
-		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
-		boxMat->Shader = shader;
-		boxMat->Set("s_Diffuse", box);
-		boxMat->Set("s_Specular", boxSpec);
-		boxMat->Set("u_Shininess", 8.0f);
-		boxMat->Set("u_TextureMix", 0.0f);
-
-		ShaderMaterial::sptr simpleFloraMat = ShaderMaterial::Create();
-		simpleFloraMat->Shader = shader;
-		simpleFloraMat->Set("s_Diffuse", simpleFlora);
-		simpleFloraMat->Set("s_Specular", noSpec);
-		simpleFloraMat->Set("u_Shininess", 8.0f);
-		simpleFloraMat->Set("u_TextureMix", 0.0f);
-
-		GameObject obj1 = scene->CreateEntity("Ground"); 
-		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plane.obj");
-			obj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassMat);
-		}
+		stoneMat->Set("s_Diffuse", stoneTex);
+		stoneMat->Set("s_Diffuse2", stoneTex);
+		stoneMat->Set("s_Specular", specular);
+		stoneMat->Set("u_Shininess", 8.0f);
+		stoneMat->Set("u_TextureMix", 0.5f);
 
 		GameObject obj2 = scene->CreateEntity("monkey_quads");
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
 			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
-			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
+			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
 			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
 		}
 
-		std::vector<glm::vec2> allAvoidAreasFrom = { glm::vec2(-4.0f, -4.0f) };
-		std::vector<glm::vec2> allAvoidAreasTo = { glm::vec2(4.0f, 4.0f) };
+		GameObject islandObj = scene->CreateEntity("scene_geo");
+		{
+			VertexArrayObject::sptr sceneVao = ObjLoader::LoadFromFile("models/plains island.obj");
+			islandObj.emplace<RendererComponent>().SetMesh(sceneVao).SetMaterial(islandMat);
+			islandObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.0f);
+			islandObj.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
 
-		std::vector<glm::vec2> rockAvoidAreasFrom = { glm::vec2(-3.0f, -3.0f), glm::vec2(-19.0f, -19.0f), glm::vec2(5.0f, -19.0f),
-														glm::vec2(-19.0f, 5.0f), glm::vec2(-19.0f, -19.0f) };
-		std::vector<glm::vec2> rockAvoidAreasTo = { glm::vec2(3.0f, 3.0f), glm::vec2(19.0f, -5.0f), glm::vec2(19.0f, 19.0f),
-														glm::vec2(19.0f, 19.0f), glm::vec2(-5.0f, 19.0f) };
-		glm::vec2 spawnFromHere = glm::vec2(-19.0f, -19.0f);
-		glm::vec2 spawnToHere = glm::vec2(19.0f, 19.0f);
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(islandObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, 0.1f });
+			pathing->Points.push_back({ 0.0f, 0.0f, 0.0f });
+			pathing->Speed = 0.05f;
+		}
 
-		EnvironmentGenerator::AddObjectToGeneration("models/simplePine.obj", simpleFloraMat, 150,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleTree.obj", simpleFloraMat, 150,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleRock.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, rockAvoidAreasFrom, rockAvoidAreasTo);
-		EnvironmentGenerator::GenerateEnvironment();
+		GameObject islandObj2 = scene->CreateEntity("scene_geo");
+		{
+			VertexArrayObject::sptr sceneVao = ObjLoader::LoadFromFile("models/plains island.obj");
+			islandObj2.emplace<RendererComponent>().SetMesh(sceneVao).SetMaterial(islandMat);
+			islandObj2.get<Transform>().SetLocalPosition(50.0f, 40.0f, 10.0f);
+			islandObj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(islandObj2);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 50.0f, 40.0f, 13.0f });
+			pathing->Points.push_back({ 50.0f, 40.0f, 10.0f });
+			pathing->Speed = 1.0f;
+		}
+
+		GameObject islandObj3 = scene->CreateEntity("scene_geo");
+		{
+			VertexArrayObject::sptr sceneVao = ObjLoader::LoadFromFile("models/plains island.obj");
+			islandObj3.emplace<RendererComponent>().SetMesh(sceneVao).SetMaterial(islandMat);
+			islandObj3.get<Transform>().SetLocalPosition(-50.0f, -40.0f, 11.0f);
+			islandObj3.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			islandObj3.get<Transform>().SetLocalScale(glm::vec3(0.5f));
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(islandObj3);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ -50.0f, -40.0f, 14.0f });
+			pathing->Points.push_back({ -50.0f, -40.0f, 11.0f });
+			pathing->Speed = 1.0f;
+		}
+
+		GameObject islandObj4 = scene->CreateEntity("scene_geo");
+		{
+			VertexArrayObject::sptr sceneVao = ObjLoader::LoadFromFile("models/plains island.obj");
+			islandObj4.emplace<RendererComponent>().SetMesh(sceneVao).SetMaterial(islandMat);
+			islandObj4.get<Transform>().SetLocalPosition(-50.0f, 40.0f, 5.0f);
+			islandObj4.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			islandObj4.get<Transform>().SetLocalScale(glm::vec3(0.75f));
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(islandObj4);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ -50.0f, 40.0f, 8.0f });
+			pathing->Points.push_back({ -50.0f, 40.0f, 5.0f });
+			pathing->Speed = 1.0f;
+		}
+
+		GameObject islandObj5 = scene->CreateEntity("scene_geo");
+		{
+			VertexArrayObject::sptr sceneVao = ObjLoader::LoadFromFile("models/plains island.obj");
+			islandObj5.emplace<RendererComponent>().SetMesh(sceneVao).SetMaterial(islandMat);
+			islandObj5.get<Transform>().SetLocalPosition(50.0f, -40.0f, 8.0f);
+			islandObj5.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			islandObj5.get<Transform>().SetLocalScale(glm::vec3(1.5f));
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(islandObj5);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 50.0f, -40.0f, 11.0f });
+			pathing->Points.push_back({ 50.0f, -40.0f, 8.0f });
+			pathing->Speed = 1.0f;
+		}
+
+		GameObject swordObj = scene->CreateEntity("sword");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Sword.obj");
+			swordObj.emplace<RendererComponent>().SetMesh(vao).SetMaterial(swordMat);
+			swordObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.5f);
+			swordObj.get<Transform>().SetLocalRotation(90.0f, 170.0f, 0.0f);
+			swordObj.get<Transform>().SetLocalScale(0.1f, 0.1f, 0.1f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(swordObj);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(swordObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, 2.6f });
+			pathing->Points.push_back({ 0.0f, 0.0f, 2.5f });
+			pathing->Speed = 0.05f;
+		}
+
+		GameObject stoneObj = scene->CreateEntity("stone");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey.obj");
+			stoneObj.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
+			stoneObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, -0.3f);
+			stoneObj.get<Transform>().SetLocalRotation(0.0f, 0.0f, 0.0f);
+			stoneObj.get<Transform>().SetLocalScale(glm::vec3(2.0f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(stoneObj);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(stoneObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, -0.2f });
+			pathing->Points.push_back({ 0.0f, 0.0f, -0.3f });
+			pathing->Speed = 0.05f;
+		}
 
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
@@ -507,9 +603,9 @@ int main() {
 
 			colourCorrectionShader->Bind();
 			colourCorrect->BindColourAsTexture(0, 0, 0);
-			testCube.bind(30);
+			warmCube.bind(30);
 			colourCorrect->DrawToScreen();
-			testCube.unbind(30);
+			warmCube.unbind(30);
 			colourCorrect->UnbindTexture(0);
 			colourCorrectionShader->UnBind();
 

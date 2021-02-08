@@ -27,7 +27,16 @@ uniform float u_TextureMix;
 
 uniform vec3  u_CamPos;
 
+uniform int u_DiffuseFactor;
+uniform int u_AmbientFactor;
+uniform int u_SpecularFactor;
+uniform int u_ToonFactor;
+
 out vec4 frag_color;
+
+//Toon Shading
+const int bands = 10;
+const float scaleFactor = 1.0/bands;
 
 // https://learnopengl.com/Advanced-Lighting/Advanced-Lighting
 void main() {
@@ -40,6 +49,8 @@ void main() {
 
 	float dif = max(dot(N, lightDir), 0.0);
 	vec3 diffuse = dif * u_LightCol;// add diffuse intensity
+
+	//diffuse = floor(diffuseOut * bands) * scaleFactor;
 
 	//Attenuation
 	float dist = length(u_LightPos - inPos);
@@ -62,10 +73,18 @@ void main() {
 	vec4 textureColor2 = texture(s_Diffuse2, inUV);
 	vec4 textureColor = mix(textureColor1, textureColor2, u_TextureMix);
 
-	vec3 result = (
-		(u_AmbientCol * u_AmbientStrength) + // global ambient light
-		(ambient + diffuse + specular) * attenuation // light factors from our single light
-		) * inColor * textureColor.rgb; // Object color
+	//Outline Effect             Thickness of Line
+	//float edge = (dot(viewDir, N) < 0.0000001) ? 0.0 : 1.0; //If below threshold it is 0, otherwise 1
+
+	vec3 lightContribution = ((ambient * u_AmbientFactor) + (diffuse * u_DiffuseFactor) + (specular * u_SpecularFactor)) * attenuation;
+
+	if(u_ToonFactor == 1)
+		lightContribution = clamp(floor(lightContribution * bands) * scaleFactor, vec3(0.0), vec3(1.0));
+
+	vec3 result = 
+		(u_AmbientCol * u_AmbientStrength + lightContribution)// global ambient light
+		 // light factors from our single light
+		 * inColor * textureColor.rgb /* * edge */; // Object color
 
 	frag_color = vec4(result, textureColor.a);
 }
