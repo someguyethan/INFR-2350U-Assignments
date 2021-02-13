@@ -61,12 +61,12 @@ int main() {
 		shader->LoadShaderPartFromFile("shaders/frag_blinn_phong_textured.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
 
-		glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
-		glm::vec3 lightCol = glm::vec3(0.9f, 0.85f, 0.5f);
-		float     lightAmbientPow = 0.05f;
+		glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 3.0f);
+		glm::vec3 lightCol = glm::vec3(1.0f);
+		float     lightAmbientPow = 0.5f;
 		float     lightSpecularPow = 1.0f;
 		glm::vec3 ambientCol = glm::vec3(1.0f);
-		float     ambientPow = 0.1f;
+		float     ambientPow = 0.8f;
 		float     lightLinearFalloff = 0.09f;
 		float     lightQuadraticFalloff = 0.032f;
 
@@ -93,6 +93,10 @@ int main() {
 		GreyscaleEffect* greyscaleEffect;
 
 		ColourCorrectionEffect* colourCorrect;
+
+		ToonShaderEffect* toonEffect;
+
+		BloomEffect* bloomEffect;
 
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
@@ -185,8 +189,8 @@ int main() {
 
 		// GL states
 		glEnable(GL_DEPTH_TEST);
-		glEnable(GL_CULL_FACE);
-		glDepthFunc(GL_LEQUAL); // New 
+		glDisable(GL_CULL_FACE);
+		glDepthFunc(GL_LEQUAL); // New
 
 		#pragma region TEXTURE LOADING
 
@@ -198,7 +202,9 @@ int main() {
 		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
 		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
 		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
-		LUT3D testCube("cubes/test.cube");
+		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/taiga_island_texture.png");
+		Texture2D::sptr crystalTex = Texture2D::LoadFromFile("images/crystal_texture.png");
+		LUT3D coolCube("cubes/Cool LUT.cube");
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -232,19 +238,19 @@ int main() {
 			scene->Registry().group<RendererComponent>(entt::get_t<Transform>());
 
 		// Create a material and set some properties for it
-		ShaderMaterial::sptr stoneMat = ShaderMaterial::Create();  
-		stoneMat->Shader = shader;
-		stoneMat->Set("s_Diffuse", stone);
-		stoneMat->Set("s_Specular", stoneSpec);
-		stoneMat->Set("u_Shininess", 2.0f);
-		stoneMat->Set("u_TextureMix", 0.0f); 
+		ShaderMaterial::sptr islandMat = ShaderMaterial::Create();  
+		islandMat->Shader = shader;
+		islandMat->Set("s_Diffuse", islandTex);
+		islandMat->Set("s_Specular", noSpec);
+		islandMat->Set("u_Shininess", 2.0f);
+		islandMat->Set("u_TextureMix", 0.0f);
 
-		ShaderMaterial::sptr grassMat = ShaderMaterial::Create();
-		grassMat->Shader = shader;
-		grassMat->Set("s_Diffuse", grass);
-		grassMat->Set("s_Specular", noSpec);
-		grassMat->Set("u_Shininess", 2.0f);
-		grassMat->Set("u_TextureMix", 0.0f);
+		ShaderMaterial::sptr crystalMat = ShaderMaterial::Create();
+		crystalMat->Shader = shader;
+		crystalMat->Set("s_Diffuse", crystalTex);
+		crystalMat->Set("s_Specular", noSpec);
+		crystalMat->Set("u_Shininess", 2.0f);
+		crystalMat->Set("u_TextureMix", 0.0f);
 
 		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
 		boxMat->Shader = shader;
@@ -260,38 +266,124 @@ int main() {
 		simpleFloraMat->Set("u_Shininess", 8.0f);
 		simpleFloraMat->Set("u_TextureMix", 0.0f);
 
-		GameObject obj1 = scene->CreateEntity("Ground"); 
+		GameObject taigaIslandObj1 = scene->CreateEntity("Taiga Island");
 		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plane.obj");
-			obj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassMat);
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+			taigaIslandObj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+			taigaIslandObj1.get<Transform>().SetLocalPosition(0.0f, 0.0f, -2.0f);
+			taigaIslandObj1.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj1);
 		}
-
-		GameObject obj2 = scene->CreateEntity("monkey_quads");
+		////////////////////////////////
+		//// Island mess dont worry ////
+		////////////////////////////////
 		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
-			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
-			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
-			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
-			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
+			GameObject taigaIslandObj2 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj2.get<Transform>().SetLocalPosition(30.0f, 0.0f, 0.0f);
+				taigaIslandObj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj2.get<Transform>().SetLocalScale(glm::vec3(1.0f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj2);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj2);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 30.0f, 0.0f, 1.0f });
+				pathing->Points.push_back({ 30.0f, 0.0f, 0.0f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject taigaIslandObj3 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj3.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj3.get<Transform>().SetLocalPosition(40.0f, -20.0f, 10.0f);
+				taigaIslandObj3.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj3.get<Transform>().SetLocalScale(glm::vec3(0.9f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj3);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj3);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 40.0f, -20.0f, 11.0f });
+				pathing->Points.push_back({ 40.0f, -20.0f, 10.0f });
+				pathing->Speed = 0.4f;
+			}
+			GameObject taigaIslandObj4 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj4.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj4.get<Transform>().SetLocalPosition(0.0f, 40.0f, -5.0f);
+				taigaIslandObj4.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj4.get<Transform>().SetLocalScale(glm::vec3(0.8f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj4);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj4);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 0.0f, 40.0f, -4.0f });
+				pathing->Points.push_back({ 0.0f, 40.0f, -5.0f });
+				pathing->Speed = 0.5f;
+			}
+			GameObject taigaIslandObj5 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj5.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj5.get<Transform>().SetLocalPosition(-30.0f, 20.0f, -10.0f);
+				taigaIslandObj5.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj5.get<Transform>().SetLocalScale(glm::vec3(0.9f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj5);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj5);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -30.0f, 20.0f, -9.0f });
+				pathing->Points.push_back({ -30.0f, 20.0f, -10.0f });
+				pathing->Speed = 0.3f;
+			}
+			GameObject taigaIslandObj6 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj6.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj6.get<Transform>().SetLocalPosition(-20.0f, 0.0f, 10.0f);
+				taigaIslandObj6.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj6.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj6);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj6);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -20.0f, 0.0f, 11.0f });
+				pathing->Points.push_back({ -20.0f, 0.0f, 10.0f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject taigaIslandObj7 = scene->CreateEntity("Taiga Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/taiga island.obj");
+				taigaIslandObj7.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				taigaIslandObj7.get<Transform>().SetLocalPosition(-20.0f, -30.0f, 5.0f);
+				taigaIslandObj7.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				taigaIslandObj7.get<Transform>().SetLocalScale(glm::vec3(0.9f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(taigaIslandObj7);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(taigaIslandObj7);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -20.0f, -30.0f, 6.0f });
+				pathing->Points.push_back({ -20.0f, -30.0f, 5.0f });
+				pathing->Speed = 0.4f;
+			}
 		}
+		
+		GameObject crystalObj = scene->CreateEntity("Crystal");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/crystal.obj");
+			crystalObj.emplace<RendererComponent>().SetMesh(vao).SetMaterial(crystalMat);
+			crystalObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 3.0f);
+			crystalObj.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(crystalObj);
 
-		std::vector<glm::vec2> allAvoidAreasFrom = { glm::vec2(-4.0f, -4.0f) };
-		std::vector<glm::vec2> allAvoidAreasTo = { glm::vec2(4.0f, 4.0f) };
-
-		std::vector<glm::vec2> rockAvoidAreasFrom = { glm::vec2(-3.0f, -3.0f), glm::vec2(-19.0f, -19.0f), glm::vec2(5.0f, -19.0f),
-														glm::vec2(-19.0f, 5.0f), glm::vec2(-19.0f, -19.0f) };
-		std::vector<glm::vec2> rockAvoidAreasTo = { glm::vec2(3.0f, 3.0f), glm::vec2(19.0f, -5.0f), glm::vec2(19.0f, 19.0f),
-														glm::vec2(19.0f, 19.0f), glm::vec2(-5.0f, 19.0f) };
-		glm::vec2 spawnFromHere = glm::vec2(-19.0f, -19.0f);
-		glm::vec2 spawnToHere = glm::vec2(19.0f, 19.0f);
-
-		EnvironmentGenerator::AddObjectToGeneration("models/simplePine.obj", simpleFloraMat, 150,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleTree.obj", simpleFloraMat, 150,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleRock.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, rockAvoidAreasFrom, rockAvoidAreasTo);
-		EnvironmentGenerator::GenerateEnvironment();
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(crystalObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, 3.5f });
+			pathing->Points.push_back({ 0.0f, 0.0f, 3.0f });
+			pathing->Speed = 0.2f;
+		}
 
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
@@ -337,6 +429,18 @@ int main() {
 			greyscaleEffect->Init(width, height);
 		}
 		effects.push_back(greyscaleEffect);
+
+		GameObject toonEffectObject = scene->CreateEntity("Toon Shader Effect");
+		{
+			toonEffect = &toonEffectObject.emplace<ToonShaderEffect>();
+			toonEffect->Init(width, height);
+		}
+
+		GameObject bloomEffectObject = scene->CreateEntity("Bloom Shader Effect");
+		{
+			bloomEffect = &bloomEffectObject.emplace<BloomEffect>();
+			bloomEffect->Init(width, height);
+		}
 		
 		#pragma endregion 
 		//////////////////////////////////////////////////////////////////////////////////////////
@@ -376,7 +480,7 @@ int main() {
 			// use std::bind
 			keyToggles.emplace_back(GLFW_KEY_T, [&]() { cameraObject.get<Camera>().ToggleOrtho(); });
 
-			controllables.push_back(obj2);
+			controllables.push_back(crystalObj);
 
 			keyToggles.emplace_back(GLFW_KEY_KP_ADD, [&]() {
 				BehaviourBinding::Get<SimpleMoveBehaviour>(controllables[selectedVao])->Enabled = false;
@@ -413,6 +517,11 @@ int main() {
 
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
 
+			crystalObj.get<Transform>().SetLocalRotation(
+														crystalObj.get<Transform>().GetLocalRotation().x,
+														crystalObj.get<Transform>().GetLocalRotation().y,
+														crystalObj.get<Transform>().GetLocalRotation().z + 2.0f);
+
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
 			frameIx++;
@@ -442,6 +551,8 @@ int main() {
 			// Clear the screen
 			basicEffect->Clear();
 			colourCorrect->Clear();
+			bloomEffect->Clear();
+			//toonEffect->Clear();
 
 			for (int i = 0; i < effects.size(); i++)
 				effects[i]->Clear();
@@ -485,6 +596,9 @@ int main() {
 			ShaderMaterial::sptr currentMat = nullptr;
 
 			colourCorrect->BindBuffer(0);
+			basicEffect->BindBuffer(0);
+			//bloomEffect->BindBuffer(0);
+			//toonEffect->BindBuffer(0);
 
 			// Iterate over the render group components and draw them
 			renderGroup.each( [&](entt::entity e, RendererComponent& renderer, Transform& transform) {
@@ -507,15 +621,21 @@ int main() {
 
 			colourCorrectionShader->Bind();
 			colourCorrect->BindColourAsTexture(0, 0, 0);
-			testCube.bind(30);
+			coolCube.bind(30);
 			colourCorrect->DrawToScreen();
-			testCube.unbind(30);
+			coolCube.unbind(30);
 			colourCorrect->UnbindTexture(0);
 			colourCorrectionShader->UnBind();
 
-			/*effects[activeEffect]->ApplyEffect(basicEffect);
+			//toonEffect->ApplyEffect(basicEffect);
+			//toonEffect->DrawToScreen();
 
-			effects[activeEffect]->DrawToScreen();*/
+			bloomEffect->ApplyEffect(basicEffect);
+			bloomEffect->DrawToScreen();
+
+			//effects[activeEffect]->ApplyEffect(basicEffect);
+
+			//effects[activeEffect]->DrawToScreen();
 
 			//basicEffect->DrawToScreen();
 

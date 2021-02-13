@@ -5,6 +5,8 @@
 #include "Graphics/Post/GreyscaleEffect.h"
 #include "Graphics/Post/SepiaEffect.h"
 #include "Graphics/Post/ColourCorrectionEffect.h"
+#include "Graphics/Post/ToonShaderEffect.h"
+#include "Graphics/Post/BloomEffect.h"
 #include "Graphics/LUT.h"
 
 #include <iostream>
