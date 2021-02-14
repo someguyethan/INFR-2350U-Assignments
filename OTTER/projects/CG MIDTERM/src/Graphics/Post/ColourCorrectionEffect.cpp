@@ -18,11 +18,15 @@ void ColourCorrectionEffect::Init(unsigned width, unsigned height)
 void ColourCorrectionEffect::ApplyEffect(PostEffect* buffer)
 {
     BindShader(0);
-    _shaders[0]->SetUniform("u_Intensity", _intensity);
+    //_shaders[0]->SetUniform("u_TexColourGrade", _LUT);
 
     buffer->BindColourAsTexture(0, 0, 0);
 
+    _LUT.bind(30);
+
     _buffers[0]->RenderToFSQ();
+
+    _LUT.unbind(30);
 
     buffer->UnbindTexture(0);
 
@@ -32,19 +36,19 @@ void ColourCorrectionEffect::ApplyEffect(PostEffect* buffer)
 void ColourCorrectionEffect::DrawToScreen()
 {
     BindShader(0);
-    _shaders[0]->SetUniform("u_Intensity", _intensity);
+    //_shaders[0]->SetUniform("u_TexColourGrade", _LUT);
     BindColourAsTexture(0, 0, 0);
     _buffers[0]->DrawFullscreenQuad();
     UnbindTexture(0);
     UnbindShader();
 }
 
-float ColourCorrectionEffect::GetIntensity() const
+void ColourCorrectionEffect::SetLUT(LUT3D lut)
 {
-    return _intensity;
+    _LUT = lut;
 }
 
-void ColourCorrectionEffect::SetIntensity(float intensity)
+LUT3D ColourCorrectionEffect::GetLUT()
 {
-    _intensity = intensity;
+    return _LUT;
 }

@@ -53,7 +53,7 @@ void BloomEffect::Init(unsigned width, unsigned height)
 
 void BloomEffect::ApplyEffect(PostEffect* buffer)
 {
-    //Draws previous buffer to first render target
+    //Takes in scene as our first buffer
     BindShader(0);
 
     buffer->BindColourAsTexture(0, 0, 0);
@@ -64,7 +64,7 @@ void BloomEffect::ApplyEffect(PostEffect* buffer)
 
     UnbindShader();
 
-    //Performs high pass on the first render target
+    //High pass (find high intensity colours and discard the rest)
     BindShader(1);
     _shaders[1]->SetUniform("u_Threshold", _threshold);
 
@@ -76,7 +76,7 @@ void BloomEffect::ApplyEffect(PostEffect* buffer)
 
     UnbindShader();
 
-    //Computes blur, vertical and horizontal
+    //Does both a horizontal and vertical blur, an amount of times equal to _passes
     for (unsigned i = 0; i < _passes; i++)
     {
         //Horizontal pass
@@ -104,7 +104,7 @@ void BloomEffect::ApplyEffect(PostEffect* buffer)
         UnbindShader();
     }
 
-    //Composite the scene and the bloom
+    //Combine the original scene and the blurred buffers
     BindShader(4);
 
     buffer->BindColourAsTexture(0, 0, 0);

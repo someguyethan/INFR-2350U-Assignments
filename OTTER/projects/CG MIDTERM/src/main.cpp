@@ -69,6 +69,16 @@ int main() {
 		float     ambientPow = 0.8f;
 		float     lightLinearFalloff = 0.09f;
 		float     lightQuadraticFalloff = 0.032f;
+		float     textureMix = 0.0f;
+		int		  diffuseFactor = 1;
+		int		  ambientFactor = 1;
+		int		  specularFactor = 1;
+		int		  toonFactor = 1;
+		bool      doBloom = true;
+		float     threshold = 0.01f;
+		float     downscale = 2.0f;
+		int		  passes = 10;
+		//int		  bands = 10;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -81,12 +91,20 @@ int main() {
 		shader->SetUniform("u_LightAttenuationConstant", 1.0f);
 		shader->SetUniform("u_LightAttenuationLinear", lightLinearFalloff);
 		shader->SetUniform("u_LightAttenuationQuadratic", lightQuadraticFalloff);
+		shader->SetUniform("u_TextureMix", textureMix);
+		shader->SetUniform("u_DiffuseFactor", diffuseFactor);
+		shader->SetUniform("u_AmbientFactor", ambientFactor);
+		shader->SetUniform("u_SpecularFactor", specularFactor);
+		shader->SetUniform("u_ToonFactor", toonFactor);
+		//shader->SetUniform("u_Bands", bands);
 
 		//Effects
 		PostEffect* basicEffect;
 
 		int activeEffect = 0;
+		int activeLUT = 0;
 		std::vector<PostEffect*> effects;
+		std::vector<LUT3D> LUTs;
 
 		SepiaEffect* sepiaEffect;
 
@@ -102,38 +120,83 @@ int main() {
 		BackendHandler::imGuiCallbacks.push_back([&]() {
 			if (ImGui::CollapsingHeader("Effect Controls"))
 			{
-				ImGui::SliderInt("Chosen Effect", &activeEffect, 0, effects.size() - 1);
-				if (activeEffect == 1)
+				ImGui::SliderInt("Chosen Effect", &activeLUT, 0, LUTs.size() - 1);
+				if (activeLUT == 0)
 				{
-					ImGui::Text("Active Effect: Greyscale Effect");
-
-					SepiaEffect* temp = (SepiaEffect*)effects[activeEffect];
-					float intensity = temp->GetIntensity();
-
-					if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f))
+					ImGui::Text("Active Effect: Cool Effect");
+				}
+				if (activeLUT == 1)
+				{
+					ImGui::Text("Active Effect: Warm Effect");
+				}
+				if (activeLUT == 2)
+				{
+					ImGui::Text("Active Effect: Custom Effect");
+				}
+				if (ImGui::Button("Toggle Bloom"))
+				{
+					doBloom = !doBloom;
+				}
+				if (doBloom)
+				{
+					if (ImGui::SliderFloat("Threshold", &threshold, 0.0f, 1.0f))
 					{
-						temp->SetIntensity(intensity);
+						bloomEffect->SetThreshold(threshold);
+					}
+					if (ImGui::SliderFloat("Downscale", &downscale, 2.0f, 20.0f))
+					{
+						bloomEffect->SetDownscale(downscale);
+					}
+					if (ImGui::SliderInt("Passes", &passes, 0, 10))
+					{
+						bloomEffect->SetPasses(passes);
 					}
 				}
-				if (activeEffect == 0)
+				if (ImGui::Button("Toggle Textures"))
 				{
-					ImGui::Text("Active Effect: Sepia Effect");
-
-					GreyscaleEffect* temp = (GreyscaleEffect*)effects[activeEffect];
-					float intensity = temp->GetIntensity();
-
-					if (ImGui::SliderFloat("Intensity", &intensity, 0.0f, 1.0f))
-					{
-						temp->SetIntensity(intensity);
-					}
+					if (textureMix == 1)
+						textureMix = 0;
+					else if (textureMix == 0)
+						textureMix = 1;
+					shader->SetUniform("u_TextureMix", textureMix);
 				}
-			}
-			if (ImGui::CollapsingHeader("Environment generation"))
-			{
-				if (ImGui::Button("Regenerate Environment", ImVec2(200.0f, 40.0f)))
+				if (ImGui::Button("Diffuse"))
 				{
-					EnvironmentGenerator::RegenerateEnvironment();
+					if (diffuseFactor == 1)
+						diffuseFactor = 0;
+					else if (diffuseFactor == 0)
+						diffuseFactor = 1;
+					shader->SetUniform("u_DiffuseFactor", diffuseFactor);
 				}
+				if (ImGui::Button("Ambient"))
+				{
+					if (ambientFactor == 1)
+						ambientFactor = 0;
+					else if (ambientFactor == 0)
+						ambientFactor = 1;
+					shader->SetUniform("u_AmbientFactor", ambientFactor);
+				}
+				if (ImGui::Button("Specular"))
+				{
+					if (specularFactor == 1)
+						specularFactor = 0;
+					else if (specularFactor == 0)
+						specularFactor = 1;
+					shader->SetUniform("u_SpecularFactor", specularFactor);
+				}
+				if (ImGui::Button("Toon"))
+				{
+					if (toonFactor == 1)
+						toonFactor = 0;
+					else if (toonFactor == 0)
+						toonFactor = 1;
+					shader->SetUniform("u_ToonFactor", toonFactor);
+				}
+				/*if (toonFactor == 1)
+				{
+					ImGui::SliderInt("Bands", &bands, 0, 20);
+					shader->SetUniform("u_Bands", bands);
+				}*/
 			}
 			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
 			{
@@ -204,7 +267,13 @@ int main() {
 		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
 		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/taiga_island_texture.png");
 		Texture2D::sptr crystalTex = Texture2D::LoadFromFile("images/crystal_texture.png");
+		Texture2D::sptr missingTex = Texture2D::LoadFromFile("images/missing_texture.jpg");
 		LUT3D coolCube("cubes/Cool LUT.cube");
+		LUT3D warmCube("cubes/Warm LUT.cube");
+		LUT3D testCube("cubes/test.cube");
+		LUTs.push_back(coolCube);
+		LUTs.push_back(warmCube);
+		LUTs.push_back(testCube);
 
 		// Load the cube map
 		//TextureCubeMap::sptr environmentMap = TextureCubeMap::LoadFromImages("images/cubemaps/skybox/sample.jpg");
@@ -241,30 +310,18 @@ int main() {
 		ShaderMaterial::sptr islandMat = ShaderMaterial::Create();  
 		islandMat->Shader = shader;
 		islandMat->Set("s_Diffuse", islandTex);
+		islandMat->Set("s_Diffuse2", missingTex);
 		islandMat->Set("s_Specular", noSpec);
 		islandMat->Set("u_Shininess", 2.0f);
-		islandMat->Set("u_TextureMix", 0.0f);
+		//islandMat->Set("u_TextureMix", textureMix);
 
 		ShaderMaterial::sptr crystalMat = ShaderMaterial::Create();
 		crystalMat->Shader = shader;
 		crystalMat->Set("s_Diffuse", crystalTex);
+		crystalMat->Set("s_Diffuse2", missingTex);
 		crystalMat->Set("s_Specular", noSpec);
 		crystalMat->Set("u_Shininess", 2.0f);
-		crystalMat->Set("u_TextureMix", 0.0f);
-
-		ShaderMaterial::sptr boxMat = ShaderMaterial::Create();
-		boxMat->Shader = shader;
-		boxMat->Set("s_Diffuse", box);
-		boxMat->Set("s_Specular", boxSpec);
-		boxMat->Set("u_Shininess", 8.0f);
-		boxMat->Set("u_TextureMix", 0.0f);
-
-		ShaderMaterial::sptr simpleFloraMat = ShaderMaterial::Create();
-		simpleFloraMat->Shader = shader;
-		simpleFloraMat->Set("s_Diffuse", simpleFlora);
-		simpleFloraMat->Set("s_Specular", noSpec);
-		simpleFloraMat->Set("u_Shininess", 8.0f);
-		simpleFloraMat->Set("u_TextureMix", 0.0f);
+		//crystalMat->Set("u_TextureMix", textureMix);
 
 		GameObject taigaIslandObj1 = scene->CreateEntity("Taiga Island");
 		{
@@ -521,7 +578,6 @@ int main() {
 														crystalObj.get<Transform>().GetLocalRotation().x,
 														crystalObj.get<Transform>().GetLocalRotation().y,
 														crystalObj.get<Transform>().GetLocalRotation().z + 2.0f);
-
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
 			frameIx++;
@@ -551,7 +607,8 @@ int main() {
 			// Clear the screen
 			basicEffect->Clear();
 			colourCorrect->Clear();
-			bloomEffect->Clear();
+			if (doBloom)
+				bloomEffect->Clear();
 			//toonEffect->Clear();
 
 			for (int i = 0; i < effects.size(); i++)
@@ -596,8 +653,8 @@ int main() {
 			ShaderMaterial::sptr currentMat = nullptr;
 
 			colourCorrect->BindBuffer(0);
-			basicEffect->BindBuffer(0);
-			//bloomEffect->BindBuffer(0);
+			if (doBloom)
+				basicEffect->BindBuffer(0);
 			//toonEffect->BindBuffer(0);
 
 			// Iterate over the render group components and draw them
@@ -621,18 +678,19 @@ int main() {
 
 			colourCorrectionShader->Bind();
 			colourCorrect->BindColourAsTexture(0, 0, 0);
-			coolCube.bind(30);
+			LUTs[activeLUT].bind(30);
 			colourCorrect->DrawToScreen();
-			coolCube.unbind(30);
+			LUTs[activeLUT].unbind(30);
 			colourCorrect->UnbindTexture(0);
 			colourCorrectionShader->UnBind();
 
 			//toonEffect->ApplyEffect(basicEffect);
 			//toonEffect->DrawToScreen();
-
-			bloomEffect->ApplyEffect(basicEffect);
-			bloomEffect->DrawToScreen();
-
+			if (doBloom)
+			{
+				bloomEffect->ApplyEffect(basicEffect);
+				bloomEffect->DrawToScreen();
+			}
 			//effects[activeEffect]->ApplyEffect(basicEffect);
 
 			//effects[activeEffect]->DrawToScreen();
