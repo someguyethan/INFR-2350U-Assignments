@@ -78,7 +78,6 @@ int main() {
 		float     threshold = 0.01f;
 		float     downscale = 2.0f;
 		int		  passes = 10;
-		//int		  bands = 10;
 
 		// These are our application / scene level uniforms that don't necessarily update
 		// every frame
@@ -96,7 +95,6 @@ int main() {
 		shader->SetUniform("u_AmbientFactor", ambientFactor);
 		shader->SetUniform("u_SpecularFactor", specularFactor);
 		shader->SetUniform("u_ToonFactor", toonFactor);
-		//shader->SetUniform("u_Bands", bands);
 
 		//Effects
 		PostEffect* basicEffect;
@@ -192,11 +190,6 @@ int main() {
 						toonFactor = 1;
 					shader->SetUniform("u_ToonFactor", toonFactor);
 				}
-				/*if (toonFactor == 1)
-				{
-					ImGui::SliderInt("Bands", &bands, 0, 20);
-					shader->SetUniform("u_Bands", bands);
-				}*/
 			}
 			if (ImGui::CollapsingHeader("Scene Level Lighting Settings"))
 			{
