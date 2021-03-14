@@ -3,6 +3,7 @@
 #include "Shader.h"
 #include "ITexture.h"
 #include "Macros.h"
+#include "UniformBuffer.h"
 #include <EnumToString.h>
 
 struct ShaderParamName {

@@ -311,7 +311,7 @@ namespace Studio
         FMOD_RESULT F_API getPath(char *path, int size, int *retrieved) const;
 
         // Loading control
-        FMOD_RESULT F_API unload();
+        FMOD_RESULT F_API Unload();
         FMOD_RESULT F_API loadSampleData();
         FMOD_RESULT F_API unloadSampleData();
 

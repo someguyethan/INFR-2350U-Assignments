@@ -195,6 +195,13 @@ int main() {
 		Texture2D::sptr box = Texture2D::LoadFromFile("images/box.bmp");
 		Texture2D::sptr boxSpec = Texture2D::LoadFromFile("images/box-reflections.bmp");
 		Texture2D::sptr simpleFlora = Texture2D::LoadFromFile("images/SimpleFlora.png");
+		Texture2D::sptr islandTex = Texture2D::LoadFromFile("images/plains_island_texture.png");
+		Texture2D::sptr swordTex = Texture2D::LoadFromFile("images/Sword.png");
+		Texture2D::sptr tree1Tex = Texture2D::LoadFromFile("images/tree1_texture.png");
+		Texture2D::sptr tree2Tex = Texture2D::LoadFromFile("images/tree2_texture.png");
+		Texture2D::sptr tree3Tex = Texture2D::LoadFromFile("images/tree3_texture.png");
+		Texture2D::sptr tree4Tex = Texture2D::LoadFromFile("images/tree4_texture.png");
+		Texture2D::sptr missingTex = Texture2D::LoadFromFile("images/missing_texture.jpg");
 		LUT3D testCube("cubes/BrightenedCorrection.cube");
 
 		// Load the cube map
@@ -258,38 +265,322 @@ int main() {
 		simpleFloraMat->Set("u_Shininess", 8.0f);
 		simpleFloraMat->Set("u_TextureMix", 0.0f);
 
-		GameObject obj1 = scene->CreateEntity("Ground"); 
-		{
-			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plane.obj");
-			obj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(grassMat);
-		}
+		ShaderMaterial::sptr islandMat = ShaderMaterial::Create();
+		islandMat->Shader = gBufferShader;
+		islandMat->Set("s_Diffuse", islandTex);
+		islandMat->Set("s_Diffuse2", missingTex);
+		islandMat->Set("s_Specular", noSpec);
+		islandMat->Set("u_Shininess", 2.0f);
+
+		ShaderMaterial::sptr swordMat = ShaderMaterial::Create();
+		swordMat->Shader = gBufferShader;
+		swordMat->Set("s_Diffuse", swordTex);
+		swordMat->Set("s_Diffuse2", missingTex);
+		swordMat->Set("s_Specular", noSpec);
+		swordMat->Set("u_Shininess", 2.0f);
+
+		ShaderMaterial::sptr tree1Mat = ShaderMaterial::Create();
+		tree1Mat->Shader = gBufferShader;
+		tree1Mat->Set("s_Diffuse", tree1Tex);
+		tree1Mat->Set("s_Diffuse2", missingTex);
+		tree1Mat->Set("s_Specular", noSpec);
+		tree1Mat->Set("u_Shininess", 2.0f);
+
+		ShaderMaterial::sptr tree2Mat = ShaderMaterial::Create();
+		tree2Mat->Shader = gBufferShader;
+		tree2Mat->Set("s_Diffuse", tree2Tex);
+		tree2Mat->Set("s_Diffuse2", missingTex);
+		tree2Mat->Set("s_Specular", noSpec);
+		tree2Mat->Set("u_Shininess", 2.0f);
+
+		ShaderMaterial::sptr tree3Mat = ShaderMaterial::Create();
+		tree3Mat->Shader = gBufferShader;
+		tree3Mat->Set("s_Diffuse", tree3Tex);
+		tree3Mat->Set("s_Diffuse2", missingTex);
+		tree3Mat->Set("s_Specular", noSpec);
+		tree3Mat->Set("u_Shininess", 2.0f);
+
+		ShaderMaterial::sptr tree4Mat = ShaderMaterial::Create();
+		tree4Mat->Shader = gBufferShader;
+		tree4Mat->Set("s_Diffuse", tree4Tex);
+		tree4Mat->Set("s_Diffuse2", missingTex);
+		tree4Mat->Set("s_Specular", noSpec);
+		tree4Mat->Set("u_Shininess", 2.0f);
 
 		GameObject obj2 = scene->CreateEntity("monkey_quads");
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
 			obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
-			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 2.0f);
+			obj2.get<Transform>().SetLocalPosition(0.0f, 0.0f, -2.0f);
 			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
+			obj2.get<Transform>().SetLocalScale(glm::vec3(0.01f));
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
 		}
 
-		std::vector<glm::vec2> allAvoidAreasFrom = { glm::vec2(-4.0f, -4.0f) };
-		std::vector<glm::vec2> allAvoidAreasTo = { glm::vec2(4.0f, 4.0f) };
+		GameObject swordObj = scene->CreateEntity("sword");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/Sword.obj");
+			swordObj.emplace<RendererComponent>().SetMesh(vao).SetMaterial(swordMat);
+			swordObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, 0.5f);
+			swordObj.get<Transform>().SetLocalRotation(90.0f, 170.0f, 0.0f);
+			swordObj.get<Transform>().SetLocalScale(0.1f, 0.1f, 0.1f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(swordObj);
 
-		std::vector<glm::vec2> rockAvoidAreasFrom = { glm::vec2(-3.0f, -3.0f), glm::vec2(-19.0f, -19.0f), glm::vec2(5.0f, -19.0f),
-														glm::vec2(-19.0f, 5.0f), glm::vec2(-19.0f, -19.0f) };
-		std::vector<glm::vec2> rockAvoidAreasTo = { glm::vec2(3.0f, 3.0f), glm::vec2(19.0f, -5.0f), glm::vec2(19.0f, 19.0f),
-														glm::vec2(19.0f, 19.0f), glm::vec2(-5.0f, 19.0f) };
-		glm::vec2 spawnFromHere = glm::vec2(-19.0f, -19.0f);
-		glm::vec2 spawnToHere = glm::vec2(19.0f, 19.0f);
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(swordObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, 0.6f });
+			pathing->Points.push_back({ 0.0f, 0.0f, 0.5f });
+			pathing->Speed = 0.05f;
+		}
 
-		EnvironmentGenerator::AddObjectToGeneration("models/simplePine.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleTree.obj", simpleFloraMat, 40,
-			spawnFromHere, spawnToHere, allAvoidAreasFrom, allAvoidAreasTo);
-		EnvironmentGenerator::AddObjectToGeneration("models/simpleRock.obj", simpleFloraMat, 24,
-			spawnFromHere, spawnToHere, rockAvoidAreasFrom, rockAvoidAreasTo);
-		EnvironmentGenerator::GenerateEnvironment();
+		GameObject stoneObj = scene->CreateEntity("stone");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey.obj");
+			stoneObj.emplace<RendererComponent>().SetMesh(vao).SetMaterial(stoneMat);
+			stoneObj.get<Transform>().SetLocalPosition(0.0f, 0.0f, -2.3f);
+			stoneObj.get<Transform>().SetLocalRotation(0.0f, 0.0f, 0.0f);
+			stoneObj.get<Transform>().SetLocalScale(glm::vec3(2.0f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(stoneObj);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(stoneObj);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, -2.2f });
+			pathing->Points.push_back({ 0.0f, 0.0f, -2.3f });
+			pathing->Speed = 0.05f;
+		}
+
+		GameObject plainsIslandObj1 = scene->CreateEntity("Plains Island");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+			plainsIslandObj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+			plainsIslandObj1.get<Transform>().SetLocalPosition(0.0f, 0.0f, -2.0f);
+			plainsIslandObj1.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj1);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj1);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 0.0f, 0.0f, -1.9f });
+			pathing->Points.push_back({ 0.0f, 0.0f, -2.0f });
+			pathing->Speed = 0.05f;
+		}
+
+		GameObject tree1Obj1 = scene->CreateEntity("Tree");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree1.obj");
+			tree1Obj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree1Mat);
+			tree1Obj1.get<Transform>().SetLocalPosition(-4.0f, -3.0f, -0.8f);
+			tree1Obj1.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			tree1Obj1.get<Transform>().SetLocalScale(glm::vec3(0.5f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(tree1Obj1);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(tree1Obj1);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ -4.0f, -3.0f, -0.7f });
+			pathing->Points.push_back({ -4.0f, -3.0f, -0.8f });
+			pathing->Speed = 0.05f;
+		}
+
+		GameObject tree1Obj2 = scene->CreateEntity("Tree");
+		{
+			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree2.obj");
+			tree1Obj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree2Mat);
+			tree1Obj2.get<Transform>().SetLocalPosition(4.0f, 7.0f, -0.8f);
+			tree1Obj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+			tree1Obj2.get<Transform>().SetLocalScale(glm::vec3(0.8f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(tree1Obj2);
+
+			auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(tree1Obj2);
+			// Set up a path for the object to follow
+			pathing->Points.push_back({ 4.0f, 7.0f, -0.7f });
+			pathing->Points.push_back({ 4.0f, 7.0f, -0.8f });
+			pathing->Speed = 0.05f;
+		}
+
+		{//Tree Stuff
+			GameObject treeObj1 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree1.obj");
+				treeObj1.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree1Mat);
+				treeObj1.get<Transform>().SetLocalPosition(41.0f, 1.0f, 0.5f);
+				treeObj1.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj1.get<Transform>().SetLocalScale(glm::vec3(0.8f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj1);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj1);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 41.0f, 1.0f, 1.5f });
+				pathing->Points.push_back({ 41.0f, 1.0f, 0.5f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject treeObj2 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree2.obj");
+				treeObj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree2Mat);
+				treeObj2.get<Transform>().SetLocalPosition(52.0f, -30.0f, 10.5f);
+				treeObj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj2.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj2);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj2);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 52.0f, -30.0f, 11.5f });
+				pathing->Points.push_back({ 52.0f, -30.0f, 10.5f });
+				pathing->Speed = 0.4f;
+			}
+			GameObject treeObj3 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree1.obj");
+				treeObj3.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree1Mat);
+				treeObj3.get<Transform>().SetLocalPosition(0.0f, 52.0f, -4.5f);
+				treeObj3.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj3.get<Transform>().SetLocalScale(glm::vec3(0.6f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj3);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj3);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 0.0f, 52.0f, -3.5f });
+				pathing->Points.push_back({ 0.0f, 52.0f, -4.5f });
+				pathing->Speed = 0.5f;
+			}
+			GameObject treeObj4 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree3.obj");
+				treeObj4.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree3Mat);
+				treeObj4.get<Transform>().SetLocalPosition(-40.0f, 29.0f, -9.5f);
+				treeObj4.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj4.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj4);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj4);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -40.0f, 29.0f, -8.5f });
+				pathing->Points.push_back({ -40.0f, 29.0f, -9.5f });
+				pathing->Speed = 0.3f;
+			}
+			GameObject treeObj5 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree1.obj");
+				treeObj5.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree1Mat);
+				treeObj5.get<Transform>().SetLocalPosition(-29.0f, 0.0f, 10.5f);
+				treeObj5.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj5.get<Transform>().SetLocalScale(glm::vec3(0.5f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj5);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj5);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -29.0f, 0.0f, 11.5f });
+				pathing->Points.push_back({ -29.0f, 0.0f, 10.5f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject treeObj6 = scene->CreateEntity("Tree");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/tree4.obj");
+				treeObj6.emplace<RendererComponent>().SetMesh(vao).SetMaterial(tree4Mat);
+				treeObj6.get<Transform>().SetLocalPosition(-29.0f, -39.0, 5.5f);
+				treeObj6.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				treeObj6.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(treeObj6);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(treeObj6);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -29.0f, -39.0, 6.5f });
+				pathing->Points.push_back({ -29.0f, -39.0, 5.5f });
+				pathing->Speed = 0.4f;
+			}
+		}
+
+		{//Island stuff
+			GameObject plainsIslandObj2 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj2.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj2.get<Transform>().SetLocalPosition(40.0f, 0.0f, 0.0f);
+				plainsIslandObj2.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj2.get<Transform>().SetLocalScale(glm::vec3(0.8f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj2);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj2);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 40.0f, 0.0f, 1.0f });
+				pathing->Points.push_back({ 40.0f, 0.0f, 0.0f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject plainsIslandObj3 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj3.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj3.get<Transform>().SetLocalPosition(50.0f, -30.0f, 10.0f);
+				plainsIslandObj3.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj3.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj3);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj3);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 50.0f, -30.0f, 11.0f });
+				pathing->Points.push_back({ 50.0f, -30.0f, 10.0f });
+				pathing->Speed = 0.4f;
+			}
+			GameObject plainsIslandObj4 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj4.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj4.get<Transform>().SetLocalPosition(0.0f, 50.0f, -5.0f);
+				plainsIslandObj4.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj4.get<Transform>().SetLocalScale(glm::vec3(0.6f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj4);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj4);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ 0.0f, 50.0f, -4.0f });
+				pathing->Points.push_back({ 0.0f, 50.0f, -5.0f });
+				pathing->Speed = 0.5f;
+			}
+			GameObject plainsIslandObj5 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj5.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj5.get<Transform>().SetLocalPosition(-40.0f, 30.0f, -10.0f);
+				plainsIslandObj5.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj5.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj5);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj5);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -40.0f, 30.0f, -9.0f });
+				pathing->Points.push_back({ -40.0f, 30.0f, -10.0f });
+				pathing->Speed = 0.3f;
+			}
+			GameObject plainsIslandObj6 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj6.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj6.get<Transform>().SetLocalPosition(-30.0f, 0.0f, 10.0f);
+				plainsIslandObj6.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj6.get<Transform>().SetLocalScale(glm::vec3(0.5f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj6);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj6);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -30.0f, 0.0f, 11.0f });
+				pathing->Points.push_back({ -30.0f, 0.0f, 10.0f });
+				pathing->Speed = 0.6f;
+			}
+			GameObject plainsIslandObj7 = scene->CreateEntity("Plains Island");
+			{
+				VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/plains island.obj");
+				plainsIslandObj7.emplace<RendererComponent>().SetMesh(vao).SetMaterial(islandMat);
+				plainsIslandObj7.get<Transform>().SetLocalPosition(-30.0f, -40.0f, 5.0f);
+				plainsIslandObj7.get<Transform>().SetLocalRotation(90.0f, 0.0f, 0.0f);
+				plainsIslandObj7.get<Transform>().SetLocalScale(glm::vec3(0.7f));
+				BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(plainsIslandObj7);
+
+				auto pathing = BehaviourBinding::Bind<FollowPathBehaviour>(plainsIslandObj7);
+				// Set up a path for the object to follow
+				pathing->Points.push_back({ -30.0f, -40.0f, 6.0f });
+				pathing->Points.push_back({ -30.0f, -40.0f, 5.0f });
+				pathing->Speed = 0.4f;
+			}
+		}
 
 		// Create an object to be our camera
 		GameObject cameraObject = scene->CreateEntity("Camera");
