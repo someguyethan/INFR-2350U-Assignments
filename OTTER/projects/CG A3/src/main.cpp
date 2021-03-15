@@ -41,6 +41,9 @@ int main() {
 
 	bool drawGBuffer = false;
 	bool drawIllumBuffer = false;
+	bool doBloom = true;
+	bool doToon = true;
+	bool doFilm = true;
 
 	BackendHandler::InitAll();
 
@@ -710,6 +713,9 @@ int main() {
 			keyToggles.emplace_back(GLFW_KEY_T, [&]() { cameraObject.get<Camera>().ToggleOrtho(); });
 			keyToggles.emplace_back(GLFW_KEY_F1, [&]() { drawGBuffer = !drawGBuffer; });
 			keyToggles.emplace_back(GLFW_KEY_F2, [&]() { drawIllumBuffer = !drawIllumBuffer; });
+			keyToggles.emplace_back(GLFW_KEY_F3, [&]() { doBloom = !doBloom; });
+			keyToggles.emplace_back(GLFW_KEY_F4, [&]() { doToon = !doToon; });
+			keyToggles.emplace_back(GLFW_KEY_F5, [&]() { doFilm = !doFilm; });
 
 			controllables.push_back(obj2);
 
@@ -776,9 +782,12 @@ int main() {
 
 			// Clear the screen
 			basicEffect->Clear();
-			bloomEffect->Clear();
-			toonEffect->Clear();
-			filmGrainEffect->Clear();
+			if(doBloom)
+				bloomEffect->Clear();
+			if (doToon)
+				toonEffect->Clear();
+			if (doFilm)
+				filmGrainEffect->Clear();
 			//greyscaleEffect->Clear();
 			//sepiaEffect->Clear();
 			for (int i = 0; i < effects.size(); i++)
@@ -836,9 +845,12 @@ int main() {
 			Shader::sptr current = nullptr;
 			ShaderMaterial::sptr currentMat = nullptr;
 
-			toonEffect->BindBuffer(0);
-			bloomEffect->BindBuffer(0);
-			filmGrainEffect->BindBuffer(0);
+			if (doToon)
+				toonEffect->BindBuffer(0);
+			if (doBloom)
+				bloomEffect->BindBuffer(0);
+			if (doFilm)
+				filmGrainEffect->BindBuffer(0);
 
 			glViewport(0, 0, shadowWidth, shadowHeight);
 			shadowBuffer->Bind();
@@ -893,11 +905,8 @@ int main() {
 			shadowBuffer->UnbindTexture(30);
 
 			toonEffect->ApplyEffect(illuminationBuffer);
-
 			bloomEffect->ApplyEffect(toonEffect);
-
 			filmGrainEffect->ApplyEffect(bloomEffect);
-
 			effects[activeEffect]->ApplyEffect(filmGrainEffect); 
 
 			if (drawGBuffer)
