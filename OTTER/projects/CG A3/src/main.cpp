@@ -101,6 +101,7 @@ int main() {
 		ColorCorrectEffect* colorCorrectEffect;
 		ToonEffect* toonEffect;
 		BloomEffect* bloomEffect;
+		FilmGrainEffect* filmGrainEffect;
 		
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
@@ -664,6 +665,12 @@ int main() {
 			bloomEffect->Init(width, height);
 		}
 
+		GameObject filmGrainEffectObject = scene->CreateEntity("Film Grain Effect");
+		{
+			filmGrainEffect = &filmGrainEffectObject.emplace<FilmGrainEffect>();
+			filmGrainEffect->Init(width, height);
+		}
+
 		#pragma endregion 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -771,6 +778,7 @@ int main() {
 			basicEffect->Clear();
 			bloomEffect->Clear();
 			toonEffect->Clear();
+			filmGrainEffect->Clear();
 			//greyscaleEffect->Clear();
 			//sepiaEffect->Clear();
 			for (int i = 0; i < effects.size(); i++)
@@ -790,7 +798,7 @@ int main() {
 			scene->Registry().view<Transform>().each([](entt::entity entity, Transform& t) {
 				t.UpdateWorldMatrix();
 			});
-
+			
 			// Grab out camera info from the camera object
 			Transform& camTransform = cameraObject.get<Transform>();
 			glm::mat4 view = glm::inverse(camTransform.LocalTransform());
@@ -830,6 +838,7 @@ int main() {
 
 			toonEffect->BindBuffer(0);
 			bloomEffect->BindBuffer(0);
+			filmGrainEffect->BindBuffer(0);
 
 			glViewport(0, 0, shadowWidth, shadowHeight);
 			shadowBuffer->Bind();
@@ -885,9 +894,11 @@ int main() {
 
 			toonEffect->ApplyEffect(illuminationBuffer);
 
-			bloomEffect ->ApplyEffect(toonEffect);
+			bloomEffect->ApplyEffect(toonEffect);
 
-			effects[activeEffect]->ApplyEffect(bloomEffect); 
+			filmGrainEffect->ApplyEffect(bloomEffect);
+
+			effects[activeEffect]->ApplyEffect(filmGrainEffect); 
 
 			if (drawGBuffer)
 				gBuffer->DrawBuffersToScreen();

@@ -9,6 +9,7 @@
 #include "Graphics/Post/ColorCorrectEffect.h"
 #include "Graphics/Post/ToonEffect.h"
 #include "Graphics/Post/BloomEffect.h"
+#include "Graphics/Post/FilmGrainEffect.h"
 
 #include <iostream>
 #include <Logging.h>
