@@ -755,8 +755,8 @@ int main() {
 
 			// Clear the screen
 			basicEffect->Clear();
-			/*greyscaleEffect->Clear();
-			sepiaEffect->Clear();*/
+			//greyscaleEffect->Clear();
+			//sepiaEffect->Clear();
 			for (int i = 0; i < effects.size(); i++)
 			{
 				effects[i]->Clear();
@@ -864,16 +864,14 @@ int main() {
 
 			shadowBuffer->UnbindTexture(30);
 
+			effects[activeEffect]->ApplyEffect(illuminationBuffer);
+
 			if (drawGBuffer)
 				gBuffer->DrawBuffersToScreen();
 			else if (drawIllumBuffer)
 				illuminationBuffer->DrawIllumBuffer();
 			else
-				illuminationBuffer->DrawToScreen();
-
-			/*effects[activeEffect]->ApplyEffect(basicEffect);
-			
-			effects[activeEffect]->DrawToScreen();*/
+				effects[activeEffect]->DrawToScreen();
 			
 			// Draw our ImGui content
 			BackendHandler::RenderImGui();

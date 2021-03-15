@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Graphics/Framebuffer.h"
+#include "Graphics/GBuffer.h"
 #include "Shader.h"
 
 class PostEffect
