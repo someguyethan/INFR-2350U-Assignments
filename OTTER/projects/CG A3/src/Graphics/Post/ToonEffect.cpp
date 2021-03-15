@@ -19,7 +19,6 @@ void ToonEffect::Init(unsigned width, unsigned height)
 void ToonEffect::ApplyEffect(PostEffect* buffer)
 {
     BindShader(0);
-    _shaders[0]->SetUniform("u_Intensity", _intensity);
 
     buffer->BindColorAsTexture(0, 0, 0);
 
@@ -28,14 +27,4 @@ void ToonEffect::ApplyEffect(PostEffect* buffer)
     buffer->UnbindTexture(0);
 
     UnbindShader();
-}
-
-float ToonEffect::GetIntensity() const
-{
-    return _intensity;
-}
-
-void ToonEffect::SetIntensity(float intensity)
-{
-    _intensity = intensity;
 }

@@ -2,23 +2,26 @@
 
 layout(location = 0) in vec2 inUV;
 
-out vec4 frag_color;
-
 layout (binding = 0) uniform sampler2D s_screenTex;
 
-//Intensity of the sepia effect
-//Lower the number, closer to regular color
-uniform float u_Intensity = 0.6;
+out vec4 frag_color;
+
+float toonify(in float intensity) {
+    if (intensity > 0.8)
+        return 1.0;
+    else if (intensity > 0.5)
+        return 0.8;
+    else if (intensity > 0.25)
+        return 0.3;
+    else
+        return 0.1;
+}
 
 void main() 
 {
 	vec4 source = texture(s_screenTex, inUV);
 
-	vec3 sepiaColor;
-	sepiaColor.r = ((source.r * 0.393) + (source.g * 0.769) + (source.b * 0.189));
-	sepiaColor.g = ((source.r * 0.349) + (source.g * 0.686) + (source.b * 0.168));
-	sepiaColor.b = ((source.r * 0.272) + (source.g * 0.534) + (source.b * 0.131));
+	float factor = toonify(max(source.r, max(source.g, source.b)));
 
-	frag_color.rgb = mix(source.rgb, sepiaColor.rgb, u_Intensity);
-	frag_color.a = source.a;
+    frag_color = vec4(factor*source.rgb, source.a);
 }

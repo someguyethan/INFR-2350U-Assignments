@@ -99,6 +99,8 @@ int main() {
 		SepiaEffect* sepiaEffect;
 		GreyscaleEffect* greyscaleEffect;
 		ColorCorrectEffect* colorCorrectEffect;
+		ToonEffect* toonEffect;
+		BloomEffect* bloomEffect;
 		
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
@@ -650,6 +652,18 @@ int main() {
 		}
 		effects.push_back(colorCorrectEffect);
 
+		GameObject toonEffectObject = scene->CreateEntity("Toon Effect");
+		{
+			toonEffect = &toonEffectObject.emplace<ToonEffect>();
+			toonEffect->Init(width, height);
+		}
+
+		GameObject bloomEffectObject = scene->CreateEntity("Bloom Effect");
+		{
+			bloomEffect = &bloomEffectObject.emplace<BloomEffect>();
+			bloomEffect->Init(width, height);
+		}
+
 		#pragma endregion 
 		//////////////////////////////////////////////////////////////////////////////////////////
 
@@ -755,6 +769,8 @@ int main() {
 
 			// Clear the screen
 			basicEffect->Clear();
+			bloomEffect->Clear();
+			toonEffect->Clear();
 			//greyscaleEffect->Clear();
 			//sepiaEffect->Clear();
 			for (int i = 0; i < effects.size(); i++)
@@ -812,6 +828,9 @@ int main() {
 			Shader::sptr current = nullptr;
 			ShaderMaterial::sptr currentMat = nullptr;
 
+			toonEffect->BindBuffer(0);
+			bloomEffect->BindBuffer(0);
+
 			glViewport(0, 0, shadowWidth, shadowHeight);
 			shadowBuffer->Bind();
 
@@ -864,7 +883,11 @@ int main() {
 
 			shadowBuffer->UnbindTexture(30);
 
-			effects[activeEffect]->ApplyEffect(illuminationBuffer);
+			toonEffect->ApplyEffect(illuminationBuffer);
+
+			bloomEffect ->ApplyEffect(toonEffect);
+
+			effects[activeEffect]->ApplyEffect(bloomEffect); 
 
 			if (drawGBuffer)
 				gBuffer->DrawBuffersToScreen();
