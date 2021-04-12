@@ -45,6 +45,9 @@ int main() {
 	bool doToon = true;
 	bool doFilm = true;
 
+	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
+	float lightSize = 1.0f;
+
 	BackendHandler::InitAll();
 
 	// Let OpenGL know that we want debug output, and route it to our handler function
@@ -115,8 +118,15 @@ int main() {
 		
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
+
+			ImGui::SliderFloat("Light Size", &lightSize, 0.1f, 10.0f);
+			ImGui::SliderFloat("Light Position X", &lightPos.x, -10.0f, 10.0f);
+			ImGui::SliderFloat("Light Position Y", &lightPos.y, -10.0f, 10.0f);
+			ImGui::SliderFloat("Light Position Z", &lightPos.z, -10.0f, 10.0f);
+
 			if (ImGui::CollapsingHeader("Effect controls"))
 			{
+
 				ImGui::SliderInt("Chosen Effect", &activeEffect, 0, effects.size() - 1);
 
 				if (activeEffect == 0)
@@ -215,6 +225,7 @@ int main() {
 		Texture2D::sptr tree3Tex = Texture2D::LoadFromFile("images/tree3_texture.png");
 		Texture2D::sptr tree4Tex = Texture2D::LoadFromFile("images/tree4_texture.png");
 		Texture2D::sptr missingTex = Texture2D::LoadFromFile("images/missing_texture.jpg");
+		Texture2D::sptr redTex = Texture2D::LoadFromFile("images/red.jpg");
 		LUT3D testCube("cubes/BrightenedCorrection.cube");
 
 		// Load the cube map
@@ -320,6 +331,13 @@ int main() {
 		tree4Mat->Set("s_Specular", noSpec);
 		tree4Mat->Set("u_Shininess", 2.0f);
 
+		ShaderMaterial::sptr sphereMat = ShaderMaterial::Create();
+		sphereMat->Shader = gBufferShader;
+		sphereMat->Set("s_Diffuse", redTex);
+		sphereMat->Set("s_Diffuse2", missingTex);
+		sphereMat->Set("s_Specular", noSpec);
+		sphereMat->Set("u_Shininess", 2.0f);
+
 		/*ShaderMaterial::sptr wireframeMat = ShaderMaterial::Create();
 		wireframeMat->Shader = wireframe;
 		wireframeMat->Set("WIRE_COL", glm::vec3(1.0f));
@@ -339,9 +357,9 @@ int main() {
 
 		GameObject sphereOBJ = scene->CreateEntity("sphere");
 		{
-			sphereOBJ.emplace<RendererComponent>().SetMesh(sphereVAO).SetMaterial(stoneMat);
+			sphereOBJ.emplace<RendererComponent>().SetMesh(sphereVAO).SetMaterial(sphereMat).SetCastShadow(false);
 			sphereOBJ.get<Transform>().SetLocalPosition(0.0f, 0.0f, 5.0f);
-			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(1.0f));
+			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(5.0f));
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(sphereOBJ);
 		}
 
@@ -776,6 +794,12 @@ int main() {
 
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
 
+			//lightPos += glm::vec3(0.5f * time.DeltaTime, 0.0f, 0.0f);
+
+			sphereOBJ.get<Transform>().SetLocalPosition(lightPos);
+
+			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(lightSize));
+
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
 			frameIx++;
@@ -943,7 +967,7 @@ int main() {
 			
 			// Draw our ImGui content
 			BackendHandler::RenderImGui();
-
+			
 			scene->Poll();
 			glfwSwapBuffers(BackendHandler::window);
 			time.LastFrame = time.CurrentFrame;
