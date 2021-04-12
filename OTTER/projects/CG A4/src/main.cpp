@@ -79,6 +79,13 @@ int main() {
 		shader->LoadShaderPartFromFile("shaders/directional_blinn_phong_frag.glsl", GL_FRAGMENT_SHADER);
 		shader->Link();
 
+		// Load our shaders
+		/*Shader::sptr wireframe = Shader::Create();
+		wireframe->LoadShaderPartFromFile("shaders/wireframe_vert.glsl", GL_VERTEX_SHADER);
+		wireframe->LoadShaderPartFromFile("shaders/wireframe_geo.glsl", GL_GEOMETRY_SHADER);
+		wireframe->LoadShaderPartFromFile("shaders/wireframe_frag.glsl", GL_FRAGMENT_SHADER);
+		wireframe->Link();*/
+
 		/*//Creates our directional Light
 		DirectionalLight theSun;
 		UniformBuffer directionalLightBuffer;
@@ -313,6 +320,12 @@ int main() {
 		tree4Mat->Set("s_Specular", noSpec);
 		tree4Mat->Set("u_Shininess", 2.0f);
 
+		/*ShaderMaterial::sptr wireframeMat = ShaderMaterial::Create();
+		wireframeMat->Shader = wireframe;
+		wireframeMat->Set("WIRE_COL", glm::vec3(1.0f));
+		wireframeMat->Set("FILL_COL", glm::vec3(1.0f));
+		wireframeMat->Set("WIN_SCALE", glm::vec2(500.0f));*/
+
 		GameObject obj2 = scene->CreateEntity("monkey_quads");
 		{
 			VertexArrayObject::sptr vao = ObjLoader::LoadFromFile("models/monkey_quads.obj");
@@ -321,6 +334,15 @@ int main() {
 			obj2.get<Transform>().SetLocalRotation(0.0f, 0.0f, -90.0f);
 			obj2.get<Transform>().SetLocalScale(glm::vec3(0.01f));
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
+		}
+		VertexArrayObject::sptr sphereVAO = ObjLoader::LoadFromFile("models/sphere.obj");
+
+		GameObject sphereOBJ = scene->CreateEntity("sphere");
+		{
+			sphereOBJ.emplace<RendererComponent>().SetMesh(sphereVAO).SetMaterial(stoneMat);
+			sphereOBJ.get<Transform>().SetLocalPosition(0.0f, 0.0f, 5.0f);
+			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(1.0f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(sphereOBJ);
 		}
 
 		GameObject swordObj = scene->CreateEntity("sword");
@@ -883,8 +905,11 @@ int main() {
 					currentMat->Apply();
 				}
 				// Render the mesh
+				if (renderer.Mesh == sphereVAO)
+					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform, lightSpaceViewProj);
-				
+				if (renderer.Mesh == sphereVAO)
+					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 			});
 			gBuffer->Unbind();
 
@@ -904,10 +929,10 @@ int main() {
 
 			shadowBuffer->UnbindTexture(30);
 
-			toonEffect->ApplyEffect(illuminationBuffer);
-			bloomEffect->ApplyEffect(toonEffect);
-			filmGrainEffect->ApplyEffect(bloomEffect);
-			effects[activeEffect]->ApplyEffect(filmGrainEffect); 
+			//toonEffect->ApplyEffect(illuminationBuffer);
+			bloomEffect->ApplyEffect(illuminationBuffer);
+			//filmGrainEffect->ApplyEffect(bloomEffect);
+			effects[activeEffect]->ApplyEffect(bloomEffect); 
 
 			if (drawGBuffer)
 				gBuffer->DrawBuffersToScreen();
