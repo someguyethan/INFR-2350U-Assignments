@@ -48,6 +48,9 @@ int main() {
 	glm::vec3 lightPos = glm::vec3(0.0f, 0.0f, 5.0f);
 	float lightSize = 1.0f;
 
+	glm::vec3 lightPos2 = glm::vec3(0.0f, 0.0f, 5.0f);
+	float lightSize2 = 1.0f;
+
 	BackendHandler::InitAll();
 
 	// Let OpenGL know that we want debug output, and route it to our handler function
@@ -118,11 +121,17 @@ int main() {
 		
 		// We'll add some ImGui controls to control our shader
 		BackendHandler::imGuiCallbacks.push_back([&]() {
-
+			ImGui::Text("Light 1");
 			ImGui::SliderFloat("Light Size", &lightSize, 0.1f, 10.0f);
 			ImGui::SliderFloat("Light Position X", &lightPos.x, -10.0f, 10.0f);
 			ImGui::SliderFloat("Light Position Y", &lightPos.y, -10.0f, 10.0f);
 			ImGui::SliderFloat("Light Position Z", &lightPos.z, -10.0f, 10.0f);
+
+			ImGui::Text("Light 2");
+			ImGui::SliderFloat("Light Size 2", &lightSize2, 0.1f, 10.0f);
+			ImGui::SliderFloat("Light Position X 2", &lightPos2.x, -10.0f, 10.0f);
+			ImGui::SliderFloat("Light Position Y 2", &lightPos2.y, -10.0f, 10.0f);
+			ImGui::SliderFloat("Light Position Z 2", &lightPos2.z, -10.0f, 10.0f);
 
 			if (ImGui::CollapsingHeader("Effect controls"))
 			{
@@ -226,6 +235,7 @@ int main() {
 		Texture2D::sptr tree4Tex = Texture2D::LoadFromFile("images/tree4_texture.png");
 		Texture2D::sptr missingTex = Texture2D::LoadFromFile("images/missing_texture.jpg");
 		Texture2D::sptr redTex = Texture2D::LoadFromFile("images/red.jpg");
+		Texture2D::sptr blueTex = Texture2D::LoadFromFile("images/blue.jpg");
 		LUT3D testCube("cubes/BrightenedCorrection.cube");
 
 		// Load the cube map
@@ -338,6 +348,13 @@ int main() {
 		sphereMat->Set("s_Specular", noSpec);
 		sphereMat->Set("u_Shininess", 2.0f);
 
+		ShaderMaterial::sptr sphereMat2 = ShaderMaterial::Create();
+		sphereMat2->Shader = gBufferShader;
+		sphereMat2->Set("s_Diffuse", blueTex);
+		sphereMat2->Set("s_Diffuse2", missingTex);
+		sphereMat2->Set("s_Specular", noSpec);
+		sphereMat2->Set("u_Shininess", 2.0f);
+
 		/*ShaderMaterial::sptr wireframeMat = ShaderMaterial::Create();
 		wireframeMat->Shader = wireframe;
 		wireframeMat->Set("WIRE_COL", glm::vec3(1.0f));
@@ -354,13 +371,21 @@ int main() {
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(obj2);
 		}
 		VertexArrayObject::sptr sphereVAO = ObjLoader::LoadFromFile("models/sphere.obj");
-
+		
 		GameObject sphereOBJ = scene->CreateEntity("sphere");
 		{
 			sphereOBJ.emplace<RendererComponent>().SetMesh(sphereVAO).SetMaterial(sphereMat).SetCastShadow(false);
 			sphereOBJ.get<Transform>().SetLocalPosition(0.0f, 0.0f, 5.0f);
 			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(5.0f));
 			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(sphereOBJ);
+		}
+
+		GameObject sphereOBJ2 = scene->CreateEntity("sphere2");
+		{
+			sphereOBJ2.emplace<RendererComponent>().SetMesh(sphereVAO).SetMaterial(sphereMat2).SetCastShadow(false);
+			sphereOBJ2.get<Transform>().SetLocalPosition(0.0f, 0.0f, 5.0f);
+			sphereOBJ2.get<Transform>().SetLocalScale(glm::vec3(5.0f));
+			BehaviourBinding::BindDisabled<SimpleMoveBehaviour>(sphereOBJ2);
 		}
 
 		GameObject swordObj = scene->CreateEntity("sword");
@@ -794,11 +819,15 @@ int main() {
 
 			time.DeltaTime = time.DeltaTime > 1.0f ? 1.0f : time.DeltaTime;
 
-			//lightPos += glm::vec3(0.5f * time.DeltaTime, 0.0f, 0.0f);
+			lightPos += glm::vec3(0.5f * time.DeltaTime, 0.0f, 0.0f);
 
 			sphereOBJ.get<Transform>().SetLocalPosition(lightPos);
 
 			sphereOBJ.get<Transform>().SetLocalScale(glm::vec3(lightSize));
+
+			sphereOBJ2.get<Transform>().SetLocalPosition(lightPos2);
+
+			sphereOBJ2.get<Transform>().SetLocalScale(glm::vec3(lightSize2));
 
 			// Update our FPS tracker data
 			fpsBuffer[frameIx] = 1.0f / time.DeltaTime;
@@ -930,10 +959,16 @@ int main() {
 				}
 				// Render the mesh
 				if (renderer.Mesh == sphereVAO)
+				{
 					glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+					glDisable(GL_CULL_FACE);
+				}
 				BackendHandler::RenderVAO(renderer.Material->Shader, renderer.Mesh, viewProjection, transform, lightSpaceViewProj);
 				if (renderer.Mesh == sphereVAO)
+				{
 					glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					glEnable(GL_CULL_FACE);
+				}
 			});
 			gBuffer->Unbind();
 
